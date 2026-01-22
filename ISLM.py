@@ -22,7 +22,41 @@ class ISLMProcess:
         self.LS = None
         self.iequ = None
         self.yeq = None
-        self.ieq = None 
+        self.ieq = None
+
+    @staticmethod
+    def validate_parameters(M, P, k, h, c, t, b):
+        """Valida los parámetros del modelo para evitar errores de cálculo."""
+        errors = []
+        warnings = []
+
+        # Validaciones críticas (pueden causar errores)
+        if P == 0:
+            errors.append("El nivel de precios (P) no puede ser cero.")
+        if k == 0:
+            errors.append("La sensibilidad a la renta (k) no puede ser cero.")
+        if h == 0:
+            warnings.append("Sensibilidad al interés (h) = 0: curva LM vertical (trampa clásica).")
+
+        # Validaciones de rango
+        if not (0 <= c <= 1):
+            errors.append(f"La propensión al consumo (c={c}) debe estar entre 0 y 1.")
+        if not (0 <= t <= 1):
+            errors.append(f"La tasa impositiva (t={t}) debe estar entre 0 y 1.")
+
+        # Validación de singularidad de la matriz
+        denominator = 1 - c*(1-t)
+        if abs(denominator) < 0.001:
+            warnings.append("Advertencia: El multiplicador fiscal es muy alto (cercano a infinito).")
+
+        return errors, warnings
+
+    @staticmethod
+    def export_results_to_csv(eq_data, params, filename="resultados_islm.csv"):
+        """Exporta los resultados del modelo a un archivo CSV."""
+        data = {**eq_data, **params}
+        df = pd.DataFrame([data])
+        return df.to_csv(index=False) 
     
     #agregar parametros
     def parameters(leftcola,leftcolb,rightcola,rightcolb):
@@ -144,7 +178,7 @@ class ISLMProcess:
         self.Leq0 = ut.Equation(L,k_*Y-h_*i)
         self.MPeq0 = ut.Equation(L,M_/P_)
         self.LM0 = ut.Equation(self.MPeq0.rhs,self.Leq0.rhs).solution_equals(Y,Y).evalf(3)
-        self.Aeq0 = ut.Equation(A,Ca_ + Ia_ + G_ + NX_ + c_*Tr_ - c_*Ta_)
+        self.Aeq0 = ut.Equation(A,Ca_ + Ia_ + G_ + NX_ + c_*(Tr_ - Ta_))
         self.LS0 = ut.Equation(Y,(self.Aeq0.rhs-b_*i)/(1-c_*(1-t_)))
         self.iequ0 = ut.Equation(self.LM0.rhs,self.LS0.rhs)
         self.ieq0 = self.iequ0.solution_equals(i,i)
@@ -180,7 +214,7 @@ class ISLMProcess:
         i = np.linspace(0,10000)
         M_P = M/P 
         Y1 = M_P/k + (h*i)/k
-        A = Ca + Ia + G + NX + c*Tr - c*Ta 
+        A = Ca + Ia + G + NX + c*(Tr - Ta) 
         Y2 = (A-b*i)/(1-c*(1-t))
         C = np.array([[k,-h],[1-c*(1-t),b]])
         B = np.array([[M_P],[A]])
@@ -191,69 +225,186 @@ class ISLMProcess:
         #deltas: son la configuración de los desplazamientos
         deltasIS = np.array([Dc,Dt,Db,DCa,DTa,DIa,DTr,DG,DNX])
         deltasLM = np.array([DM,DP,Dk,Dh])
-        DM_P = (DM+M)/(DP+P) 
-        DY1 = (DM_P+M_P)/(Dk+k) + (Dh+h)*(i)/(Dk+k)
-        D_A =  (Ia+ DIa)+(G+DG) + (DNX+NX)+ (c*Tr+Dc*DTr) - (Dc*DTa+c*Ta)+(DCa+Ca)
-        DY2 = (D_A+A-Db*i-b*i)/(1-(Dc+c)*(1-(Dt+t)))
-        DC = np.array([[(Dk+k),-(Dh+h)],[1-(c+Dc)*(1-(t+Dt)),(Db+b)]])
-        DB = np.array([[(DM_P+P)],[(A+D_A)]])
-        DX = np.linalg.inv(DC).dot(DB)
-        Di1 = np.linspace(0,DX[0]*(Dk+k)/(h+Dh)+100)
-        DY = np.linspace(0,DX[0]+DX[0]*0.3)
+
+        # Nuevos parámetros con deltas aplicados
+        M_new = M + DM
+        P_new = P + DP
+        k_new = k + Dk
+        h_new = h + Dh
+        c_new = c + Dc
+        t_new = t + Dt
+        b_new = b + Db
+        Ca_new = Ca + DCa
+        Ta_new = Ta + DTa
+        Ia_new = Ia + DIa
+        Tr_new = Tr + DTr
+        G_new = G + DG
+        NX_new = NX + DNX
+
+        # Nueva oferta monetaria real
+        DM_P = M_new / P_new if P_new != 0 else M_P
+
+        # Nueva curva LM (con deltas)
+        DY1 = DM_P/k_new + (h_new*i)/k_new if k_new != 0 else Y1
+
+        # Nueva demanda agregada autónoma (con deltas)
+        D_A = Ca_new + Ia_new + G_new + NX_new + c_new*(Tr_new - Ta_new)
+
+        # Nueva curva IS (con deltas)
+        denominator_new = 1 - c_new*(1 - t_new)
+        DY2 = (D_A - b_new*i) / denominator_new if denominator_new != 0 else Y2
+
+        # Nuevo equilibrio
+        DC = np.array([[k_new, -h_new], [1 - c_new*(1 - t_new), b_new]])
+        DB = np.array([[DM_P], [D_A]])
+        try:
+            DX = np.linalg.inv(DC).dot(DB)
+        except np.linalg.LinAlgError:
+            DX = X  # Si la matriz es singular, usar el equilibrio original
+
+        Di1 = np.linspace(0, DX[0]*k_new/h_new + 100 if h_new != 0 else 100)
+        DY = np.linspace(0, DX[0] + DX[0]*0.3)
 
         ##grafica equilibrio mercado
 
         fig1, ax = plt.subplots(figsize=(10, 8))
-        ax.plot(i, Y1)
-        ax.plot(i,Y2)
-        ax.set_xlim(0,float(X[1]) + X[1]*0.2)
-        ax.set_ylim(0,int(X[0]+X[0]*0.2))
-        ax.set_xlabel('Tasa de Interés')
-        ax.set_ylabel('Producto Total')
-        ax.set_title('EQUILIBRIO IS-LM') 
-        
-        if np.any(deltasIS != 0):
-            ax.plot(i,DY2)
-           
-            if np.any(deltasLM != 0):
-                ax.plot(i,DY1)
-                ax.legend(['IS-1', 'LM-1','IS-2','LM-2'])
-            else:
-                ax.legend(['IS-1', 'LM-1','IS-2'])
-        
-        elif np.any(deltasLM != 0):
-            ax.plot(i,DY1)
-            ax.legend(['IS-1', 'LM-1','LM-2'])
-        
-        else:
-            ax.legend(['IS-1', 'LM-1'])
+        ax.plot(i, Y1, 'b-', linewidth=2)
+        ax.plot(i, Y2, 'r-', linewidth=2)
 
-        ##grafica IS
+        # Punto de equilibrio inicial
+        Y_eq = float(X[0])
+        i_eq = float(X[1])
+        ax.scatter([i_eq], [Y_eq], color='green', s=150, zorder=5, marker='o')
+        ax.annotate(f'E₁ ({i_eq:.1f}, {Y_eq:.1f})',
+                   xy=(i_eq, Y_eq), xytext=(i_eq + i_eq*0.1, Y_eq + Y_eq*0.05),
+                   fontsize=12, color='green', fontweight='bold')
+
+        # Líneas punteadas al equilibrio
+        ax.axhline(y=Y_eq, color='gray', linestyle='--', alpha=0.5, linewidth=1)
+        ax.axvline(x=i_eq, color='gray', linestyle='--', alpha=0.5, linewidth=1)
+
+        ax.set_xlim(0, float(X[1]) + X[1]*0.3)
+        ax.set_ylim(0, int(X[0] + X[0]*0.3))
+        ax.set_xlabel('Tasa de Interés (i)')
+        ax.set_ylabel('Producto Total (Y)')
+        ax.set_title('EQUILIBRIO IS-LM')
+
+        if np.any(deltasIS != 0):
+            ax.plot(i, DY2, 'r--', linewidth=2)
+
+            if np.any(deltasLM != 0):
+                ax.plot(i, DY1, 'b--', linewidth=2)
+                # Punto de equilibrio nuevo
+                Y_eq_new = float(DX[0])
+                i_eq_new = float(DX[1])
+                ax.scatter([i_eq_new], [Y_eq_new], color='purple', s=150, zorder=5, marker='s')
+                ax.annotate(f'E₂ ({i_eq_new:.1f}, {Y_eq_new:.1f})',
+                           xy=(i_eq_new, Y_eq_new), xytext=(i_eq_new + i_eq_new*0.1, Y_eq_new - Y_eq_new*0.05),
+                           fontsize=12, color='purple', fontweight='bold')
+                ax.legend(['LM₁', 'IS₁', 'IS₂', 'LM₂'])
+            else:
+                # Calcular nuevo equilibrio solo IS
+                DC_is = np.array([[k, -h], [1 - c_new*(1 - t_new), b_new]])
+                DB_is = np.array([[M_P], [D_A]])
+                try:
+                    DX_is = np.linalg.inv(DC_is).dot(DB_is)
+                    Y_eq_new = float(DX_is[0])
+                    i_eq_new = float(DX_is[1])
+                    ax.scatter([i_eq_new], [Y_eq_new], color='purple', s=150, zorder=5, marker='s')
+                    ax.annotate(f'E₂ ({i_eq_new:.1f}, {Y_eq_new:.1f})',
+                               xy=(i_eq_new, Y_eq_new), xytext=(i_eq_new + i_eq_new*0.1, Y_eq_new - Y_eq_new*0.05),
+                               fontsize=12, color='purple', fontweight='bold')
+                except:
+                    pass
+                ax.legend(['LM₁', 'IS₁', 'IS₂'])
+
+        elif np.any(deltasLM != 0):
+            ax.plot(i, DY1, 'b--', linewidth=2)
+            # Calcular nuevo equilibrio solo LM
+            DC_lm = np.array([[k_new, -h_new], [1 - c*(1 - t), b]])
+            DB_lm = np.array([[DM_P], [A]])
+            try:
+                DX_lm = np.linalg.inv(DC_lm).dot(DB_lm)
+                Y_eq_new = float(DX_lm[0])
+                i_eq_new = float(DX_lm[1])
+                ax.scatter([i_eq_new], [Y_eq_new], color='purple', s=150, zorder=5, marker='s')
+                ax.annotate(f'E₂ ({i_eq_new:.1f}, {Y_eq_new:.1f})',
+                           xy=(i_eq_new, Y_eq_new), xytext=(i_eq_new + i_eq_new*0.1, Y_eq_new - Y_eq_new*0.05),
+                           fontsize=12, color='purple', fontweight='bold')
+            except:
+                pass
+            ax.legend(['LM₁', 'IS₁', 'LM₂'])
+
+        else:
+            ax.legend(['LM', 'IS'])
+
+        ##grafica IS (Mercado de Bienes)
 
         fig2, ax2 = plt.subplots(figsize=(10, 8))
-        ax2.plot(Y,A+c*(1-t)*Y-b*X[1])
-        
-        ax2.plot(Y,Y)
-        ax2.legend(['Producto Total', 'Demanda Agregada = Y'])
-        ax2.set_xlabel('Y')
-        ax2.set_ylabel('Demanda Agregada')
-        ax2.set_xlim(0,float(X[0]) + X[0]*0.2)
-        ax2.set_ylim(0,int(X[0]+X[0]*0.2))
+        DA_values = A + c*(1-t)*Y - b*X[1]
+        ax2.plot(Y, DA_values, 'r-', linewidth=2, label='Demanda Agregada (DA)')
+        ax2.plot(Y, Y, 'b-', linewidth=2, label='Y = DA (45°)')
 
-        ##grafica LM
+        # Punto de equilibrio en el mercado de bienes
+        Y_eq = float(X[0])
+        ax2.scatter([Y_eq], [Y_eq], color='green', s=150, zorder=5, marker='o')
+        ax2.annotate(f'Equilibrio Y* = {Y_eq:.1f}',
+                    xy=(Y_eq, Y_eq), xytext=(Y_eq*0.6, Y_eq*1.1),
+                    fontsize=11, color='green', fontweight='bold',
+                    arrowprops=dict(arrowstyle='->', color='green', lw=1.5))
+
+        ax2.axhline(y=Y_eq, color='gray', linestyle='--', alpha=0.5, linewidth=1)
+        ax2.axvline(x=Y_eq, color='gray', linestyle='--', alpha=0.5, linewidth=1)
+
+        ax2.legend(loc='upper left')
+        ax2.set_xlabel('Producto (Y)')
+        ax2.set_ylabel('Demanda Agregada (DA)')
+        ax2.set_title('MERCADO DE BIENES - Construcción IS')
+        ax2.set_xlim(0, float(X[0]) + X[0]*0.3)
+        ax2.set_ylim(0, int(X[0] + X[0]*0.3))
+
+        ##grafica LM (Mercado de Dinero)
 
         fig3, ax3 = plt.subplots(figsize=(10, 8))
-        ax3.plot(k*X[0]-h*i1,i1)
-        mp = np.array([M_P for i in range(len(i1))])
-        ax3.plot(mp,i1)
-        ax3.legend(['Demanda de Dinero', 'Oferta de Dinero'])
-        ax3.set_xlabel('Dinero')
-        ax3.set_ylabel('Tasa de Interes')
-        ax3.set_xlim(0,M_P + M_P*0.2)
-        ax3.set_ylim(0,int(X[0]+X[0]*0.2))
-        
-        #pd.DataFrame(X,index=['Nivel de Renta','Tasa de Interes'],columns=['Equilibrio Economía'])
-        return fig1,fig2,fig3
+        L_demand = k*X[0] - h*i1  # Demanda de dinero L = kY - hi
+        mp = np.array([M_P for _ in range(len(i1))])  # Oferta de dinero M/P
+
+        ax3.plot(L_demand, i1, 'r-', linewidth=2, label='Demanda de Dinero (L)')
+        ax3.plot(mp, i1, 'b-', linewidth=2, label='Oferta de Dinero (M/P)')
+
+        # Punto de equilibrio en el mercado de dinero
+        i_eq = float(X[1])
+        ax3.scatter([M_P], [i_eq], color='green', s=150, zorder=5, marker='o')
+        ax3.annotate(f'Equilibrio i* = {i_eq:.2f}',
+                    xy=(M_P, i_eq), xytext=(M_P*0.5, i_eq*1.3),
+                    fontsize=11, color='green', fontweight='bold',
+                    arrowprops=dict(arrowstyle='->', color='green', lw=1.5))
+
+        ax3.axhline(y=i_eq, color='gray', linestyle='--', alpha=0.5, linewidth=1)
+
+        ax3.legend(loc='upper right')
+        ax3.set_xlabel('Dinero (L, M/P)')
+        ax3.set_ylabel('Tasa de Interés (i)')
+        ax3.set_title('MERCADO DE DINERO - Construcción LM')
+        ax3.set_xlim(0, M_P + M_P*0.3)
+        ax3.set_ylim(0, max(i_eq*2, 10))
+
+        # Preparar datos de equilibrio para retorno
+        equilibrium_data = {
+            'Y_equilibrio': round(float(X[0]), 2),
+            'i_equilibrio': round(float(X[1]), 4),
+            'A_autonomo': round(A, 2),
+            'M_P_real': round(M_P, 2)
+        }
+
+        # Si hay desplazamiento, añadir nuevo equilibrio
+        if np.any(deltasIS != 0) or np.any(deltasLM != 0):
+            equilibrium_data['Y_equilibrio_nuevo'] = round(float(DX[0]), 2)
+            equilibrium_data['i_equilibrio_nuevo'] = round(float(DX[1]), 4)
+            equilibrium_data['Delta_Y'] = round(float(DX[0]) - float(X[0]), 2)
+            equilibrium_data['Delta_i'] = round(float(DX[1]) - float(X[1]), 4)
+
+        return fig1, fig2, fig3, equilibrium_data
 
 
 if __name__ == '__main__':

@@ -1,3 +1,9 @@
+"""
+NOTA: Este archivo contiene funciones legacy del modelo IS-LM.
+La funcionalidad principal ahora se encuentra en ISLM.py (clase ISLMProcess).
+Este archivo se mantiene por compatibilidad hacia atras.
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd

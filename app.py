@@ -156,40 +156,92 @@ def main():
     #CODIGO SI ELIGE DESPLAZAMIENTOS EN EL MODELO
     with tab2:
         st.markdown("***Deltas***")
+        st.markdown("*Ingrese los cambios (Δ) en los parámetros para simular desplazamientos de las curvas.*")
         leftcola,leftcolb,rightcola,rightcolb = st.columns(4)
         DMp,DPp,Dkp,Dhp,Dcp,Dtp,Dbp,DCap,DTap,DIap,DTrp,DGp,DNXp = ISLMProcess.deltas(leftcola,leftcolb,rightcola,rightcolb)
         st.write('')
- 
 
+    # Validar parámetros
+    errors, warnings = ISLMProcess.validate_parameters(Mp, Pp, kp, hp, cp, tp, bp)
 
-    ##REALIZACIÓN DELA GRAFICA
+    if errors:
+        st.error("**Errores en los parámetros:**")
+        for error in errors:
+            st.error(f"- {error}")
+        st.stop()
+
+    if warnings:
+        for warning in warnings:
+            st.warning(f"⚠️ {warning}")
+
+    ##REALIZACIÓN DE LA GRAFICA
     Col1,Col2,Col3 = st.columns([1.3,1.3,2])
-    plt, plt1,plt2 = ISLMProcess.graficar(Mp,Pp,kp,hp,cp,tp,bp,Cap,Tap,Iap,Trp,Gp,NXp,
+    fig_eq, fig_is, fig_lm, eq_data = ISLMProcess.graficar(Mp,Pp,kp,hp,cp,tp,bp,Cap,Tap,Iap,Trp,Gp,NXp,
                             DMp,DPp,Dkp,Dhp,Dcp,Dtp,Dbp,DCap,DTap,DIap,DTrp,DGp,DNXp)
+
+    # Mostrar valores de equilibrio
+    st.markdown("""---""")
+    st.subheader('Resultados del Equilibrio')
+
+    col_eq1, col_eq2, col_eq3, col_eq4 = st.columns(4)
+    with col_eq1:
+        st.metric(label="Producto de Equilibrio (Y*)", value=f"{eq_data['Y_equilibrio']:,.2f}")
+    with col_eq2:
+        st.metric(label="Tasa de Interés de Equilibrio (i*)", value=f"{eq_data['i_equilibrio']:.4f}")
+    with col_eq3:
+        st.metric(label="Demanda Autónoma (A)", value=f"{eq_data['A_autonomo']:,.2f}")
+    with col_eq4:
+        st.metric(label="Oferta Monetaria Real (M/P)", value=f"{eq_data['M_P_real']:,.2f}")
+
+    # Si hay desplazamiento, mostrar cambios
+    if 'Y_equilibrio_nuevo' in eq_data:
+        st.markdown("**Después del Desplazamiento:**")
+        col_eq5, col_eq6, col_eq7, col_eq8 = st.columns(4)
+        with col_eq5:
+            delta_y = eq_data['Delta_Y']
+            st.metric(label="Nuevo Y*", value=f"{eq_data['Y_equilibrio_nuevo']:,.2f}",
+                     delta=f"{delta_y:+,.2f}")
+        with col_eq6:
+            delta_i = eq_data['Delta_i']
+            st.metric(label="Nueva i*", value=f"{eq_data['i_equilibrio_nuevo']:.4f}",
+                     delta=f"{delta_i:+.4f}")
+
+    # Exportar resultados
+    st.markdown("")
+    params_dict = {
+        'M': Mp, 'P': Pp, 'k': kp, 'h': hp, 'c': cp, 't': tp, 'b': bp,
+        'Ca': Cap, 'Ta': Tap, 'Ia': Iap, 'Tr': Trp, 'G': Gp, 'NX': NXp
+    }
+    csv_data = ISLMProcess.export_results_to_csv(eq_data, params_dict)
+    st.download_button(
+        label="📥 Descargar Resultados (CSV)",
+        data=csv_data,
+        file_name="resultados_islm.csv",
+        mime="text/csv"
+    )
+
+    st.markdown("""---""")
     
-    with Col1: 
+    with Col1:
         st.subheader('Construcción IS')
-        st.pyplot(plt1)
-        st.markdown('''La gráfica de DA vs Y se muestra cómo cambia la DA cuando
-        cambia el nivel de renta total en la economía. Se considera el
-        equilibrio en el mercado de bienes DA=Y, es decir una recta que inicia en el origen es
-        interceptada por la recta inclinada que representa diferentes valores en 
-        las demás variables de la economía.''')
+        st.pyplot(fig_is)
+        st.markdown('''La gráfica de DA vs Y muestra cómo cambia la Demanda Agregada cuando
+        cambia el nivel de renta total en la economía. El equilibrio en el mercado de bienes
+        se da cuando DA=Y (línea de 45°). El punto verde indica el nivel de producto de equilibrio.''')
 
     with Col2:
         st.subheader('Construcción LM')
-        st.pyplot(plt2)
+        st.pyplot(fig_lm)
         st.markdown('''En la gráfica del mercado de dinero vemos la relación entre la tasa
-         de interés y la cantidad de dinero en la economía. Nos muestra cómo 
-         cambia la tasa de interés a medida que cambia la cantidad de dinero en una economía. Esto
-         se puede producir por cambios en la renta o en la oferta monetaria, asi como en P, h y k''')
+        de interés y la cantidad de dinero. La intersección entre la demanda de dinero (L)
+        y la oferta monetaria real (M/P) determina la tasa de interés de equilibrio.''')
 
     with Col3:
         st.subheader('Equilibrio de Mercado')
-        st.pyplot(plt)
-        st.markdown('''La gráfica muestra el punto de equilibrio/intercepción entre 
-        ambos mercados, es decir de las rectas IS-LM. Dando el nivel de renta de equilibrio y la 
-        tasa de interes de equilibrio''')
+        st.pyplot(fig_eq)
+        st.markdown('''La gráfica muestra el equilibrio general IS-LM. El punto verde (E₁)
+        indica el equilibrio inicial. Si se aplican desplazamientos, el punto morado (E₂)
+        muestra el nuevo equilibrio.''')
 
 
     ##RESULTADOS EJERCICIO
