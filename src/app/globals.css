@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* KaTeX styles */
+@import 'katex/dist/katex.min.css';
+
+:root {
+  --font-inter: 'Inter', system-ui, sans-serif;
+  --font-merriweather: 'Merriweather', Georgia, serif;
+}
+
+/* Estilos base para contenido educativo */
+.prose-econ {
+  @apply prose prose-lg max-w-none;
+  @apply prose-headings:font-serif prose-headings:text-gray-900;
+  @apply prose-p:text-gray-700 prose-p:leading-relaxed;
+  @apply prose-a:text-econ-blue-600 prose-a:no-underline hover:prose-a:underline;
+}
+
+/* Animaciones para ecuaciones */
+.equation-container {
+  @apply my-8 p-6 bg-gray-50 rounded-xl border border-gray-200;
+  @apply overflow-x-auto;
+}
+
+.equation-highlight {
+  @apply bg-yellow-100 px-1 rounded transition-colors duration-300;
+}
+
+/* Graficos interactivos */
+.graph-container {
+  @apply relative w-full aspect-video bg-white rounded-xl shadow-lg;
+  @apply border border-gray-200 overflow-hidden;
+}
+
+/* Sliders de parametros */
+.param-slider {
+  @apply w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer;
+}
+
+.param-slider::-webkit-slider-thumb {
+  @apply appearance-none w-5 h-5 bg-econ-blue-600 rounded-full cursor-pointer;
+  @apply shadow-md hover:bg-econ-blue-700 transition-colors;
+}
+
+/* Cards de conceptos */
+.concept-card {
+  @apply p-6 bg-white rounded-xl shadow-md border border-gray-100;
+  @apply hover:shadow-lg transition-shadow duration-300;
+}
+
+/* Animaciones de entrada */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+/* Step by step animations */
+.step-indicator {
+  @apply w-8 h-8 rounded-full flex items-center justify-center;
+  @apply text-sm font-semibold transition-all duration-300;
+}
+
+.step-indicator.active {
+  @apply bg-econ-blue-600 text-white scale-110;
+}
+
+.step-indicator.completed {
+  @apply bg-econ-green-500 text-white;
+}
+
+.step-indicator.pending {
+  @apply bg-gray-200 text-gray-500;
+}
