@@ -42,7 +42,7 @@ const models = [
     difficulty: 'Intermedio',
     icon: '🎯',
     color: 'indigo',
-    ready: false,
+    ready: true,
   },
   {
     id: 'as-ad',
@@ -52,7 +52,7 @@ const models = [
     difficulty: 'Intermedio',
     icon: '📉',
     color: 'purple',
-    ready: false,
+    ready: true,
   },
   {
     id: 'mundell-fleming',
