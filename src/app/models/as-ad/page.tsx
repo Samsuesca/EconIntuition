@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
+import { ModelConnections } from '@/components/ModelConnections'
 
 const ASADModel = dynamic(
   () => import('@/components/models/ASADModel'),
@@ -22,6 +23,11 @@ export default function ASADPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <ASADModel />
+
+        {/* Conexiones con otros modelos */}
+        <section className="mt-16">
+          <ModelConnections modelId="as-ad" />
+        </section>
 
         <section className="mt-16 prose prose-lg max-w-none">
           <h2>Sobre el Modelo AS-AD</h2>

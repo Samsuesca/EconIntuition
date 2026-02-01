@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
+import { ModelConnections } from '@/components/ModelConnections'
 
 const SupplyDemandModel = dynamic(
   () => import('@/components/models/SupplyDemandModel'),
@@ -22,6 +23,11 @@ export default function SupplyDemandPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <SupplyDemandModel />
+
+        {/* Conexiones con otros modelos */}
+        <section className="mt-16">
+          <ModelConnections modelId="oferta-demanda" />
+        </section>
 
         <section className="mt-16 prose prose-lg max-w-none">
           <h2>Sobre el Modelo de Oferta y Demanda</h2>

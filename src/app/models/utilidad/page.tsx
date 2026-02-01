@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
+import { ModelConnections } from '@/components/ModelConnections'
 
 const UtilityModel = dynamic(
   () => import('@/components/models/UtilityModel'),
@@ -22,6 +23,11 @@ export default function UtilityPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <UtilityModel />
+
+        {/* Conexiones con otros modelos */}
+        <section className="mt-16">
+          <ModelConnections modelId="utilidad" />
+        </section>
 
         <section className="mt-16 prose prose-lg max-w-none">
           <h2>Sobre la Teoría del Consumidor</h2>
