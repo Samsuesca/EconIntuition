@@ -1,70 +1,110 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { motion } from 'framer-motion'
+import Link from "next/link";
+import { motion } from "framer-motion";
 
 const models = [
   {
-    id: 'is-lm',
-    title: 'Modelo IS-LM',
-    description: 'Equilibrio simultáneo del mercado de bienes y dinero',
-    category: 'Macroeconomía',
-    difficulty: 'Intermedio',
-    icon: '📊',
-    color: 'blue',
+    id: "is-lm",
+    title: "Modelo IS-LM",
+    description: "Equilibrio simultáneo del mercado de bienes y dinero",
+    category: "Macroeconomía",
+    difficulty: "Intermedio",
+    icon: "📊",
+    color: "blue",
     ready: true,
   },
   {
-    id: 'oferta-demanda',
-    title: 'Oferta y Demanda',
-    description: 'Equilibrio de mercado y elasticidades',
-    category: 'Microeconomía',
-    difficulty: 'Básico',
-    icon: '📈',
-    color: 'green',
+    id: "oferta-demanda",
+    title: "Oferta y Demanda",
+    description: "Equilibrio de mercado y elasticidades",
+    category: "Microeconomía",
+    difficulty: "Básico",
+    icon: "📈",
+    color: "green",
     ready: true,
   },
   {
-    id: 'solow',
-    title: 'Modelo de Solow',
-    description: 'Crecimiento económico de largo plazo',
-    category: 'Macroeconomía',
-    difficulty: 'Avanzado',
-    icon: '🚀',
-    color: 'orange',
+    id: "solow",
+    title: "Modelo de Solow",
+    description: "Crecimiento económico de largo plazo",
+    category: "Macroeconomía",
+    difficulty: "Avanzado",
+    icon: "🚀",
+    color: "orange",
     ready: true,
   },
   {
-    id: 'utilidad',
-    title: 'Preferencias y Utilidad',
-    description: 'Curvas de indiferencia y elección del consumidor',
-    category: 'Microeconomía',
-    difficulty: 'Intermedio',
-    icon: '🎯',
-    color: 'indigo',
+    id: "utilidad",
+    title: "Preferencias y Utilidad",
+    description: "Curvas de indiferencia y elección del consumidor",
+    category: "Microeconomía",
+    difficulty: "Intermedio",
+    icon: "🎯",
+    color: "indigo",
     ready: true,
   },
   {
-    id: 'as-ad',
-    title: 'AS-AD',
-    description: 'Oferta y demanda agregada',
-    category: 'Macroeconomía',
-    difficulty: 'Intermedio',
-    icon: '📉',
-    color: 'purple',
+    id: "as-ad",
+    title: "AS-AD",
+    description: "Oferta y demanda agregada",
+    category: "Macroeconomía",
+    difficulty: "Intermedio",
+    icon: "📉",
+    color: "purple",
     ready: true,
   },
   {
-    id: 'mundell-fleming',
-    title: 'Mundell-Fleming',
-    description: 'IS-LM en economía abierta',
-    category: 'Macroeconomía',
-    difficulty: 'Avanzado',
-    icon: '🌍',
-    color: 'purple',
-    ready: false,
+    id: "mundell-fleming",
+    title: "Mundell-Fleming",
+    description: "IS-LM en economía abierta",
+    category: "Macroeconomía",
+    difficulty: "Avanzado",
+    icon: "🌍",
+    color: "purple",
+    ready: true,
   },
-]
+  {
+    id: "teoria-firma",
+    title: "Teoría de la Firma",
+    description: "Producción, costos e isocuantas",
+    category: "Microeconomía",
+    difficulty: "Intermedio",
+    icon: "🏭",
+    color: "amber",
+    ready: true,
+  },
+  {
+    id: "estructuras-mercado",
+    title: "Estructuras de Mercado",
+    description: "Competencia, monopolio y oligopolio",
+    category: "Microeconomía",
+    difficulty: "Intermedio",
+    icon: "🏢",
+    color: "red",
+    ready: true,
+  },
+  {
+    id: "elasticidades",
+    title: "Elasticidades",
+    description: "Precio, ingreso e incidencia impositiva",
+    category: "Microeconomía",
+    difficulty: "Básico",
+    icon: "📏",
+    color: "teal",
+    ready: true,
+  },
+  {
+    id: "curva-phillips",
+    title: "Curva de Phillips",
+    description: "Trade-off inflación y desempleo",
+    category: "Macroeconomía",
+    difficulty: "Intermedio",
+    icon: "📉",
+    color: "rose",
+    ready: true,
+  },
+];
 
 export default function ModelsPage() {
   return (
@@ -73,7 +113,10 @@ export default function ModelsPage() {
       <nav className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <Link href="/" className="text-xl font-serif font-bold text-gray-900">
+            <Link
+              href="/"
+              className="text-xl font-serif font-bold text-gray-900"
+            >
               Econ<span className="text-blue-600">Intuition</span>
             </Link>
           </div>
@@ -88,8 +131,8 @@ export default function ModelsPage() {
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl">
             Explora modelos económicos de forma interactiva. Ajusta parámetros,
-            observa cómo cambian los equilibrios y desarrolla intuición sobre
-            la teoría económica.
+            observa cómo cambian los equilibrios y desarrolla intuición sobre la
+            teoría económica.
           </p>
         </div>
       </div>
@@ -162,5 +205,5 @@ export default function ModelsPage() {
         </div>
       </footer>
     </main>
-  )
+  );
 }
